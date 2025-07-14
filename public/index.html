@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Frota</title>
+    <style>
+        body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; margin: 0; padding: 10px; background-color: #f0f2f5; }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h1, h2, h3 { color: #1c1e21; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+        form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px 20px; }
+        form .full-width { grid-column: 1 / -1; }
+        label { font-weight: 600; color: #606770; display: block; margin-bottom: 5px; }
+        select, input, button { padding: 12px; border-radius: 6px; border: 1px solid #ccd0d5; font-size: 16px; width: 100%; box-sizing: border-box; }
+        button { background-color: #1877f2; color: white; cursor: pointer; border: none; font-weight: bold; }
+        .action-btn { background-color: #007bff; font-size: 12px; padding: 8px 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; vertical-align: middle; }
+        th { background-color: #f5f6f7; }
+        .relatorio-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .filtros-container { display: flex; gap: 20px; }
+        .summary-container { display: flex; gap: 20px; margin: 20px 0; }
+        .summary-card { flex-grow: 1; background-color: #f5f6f7; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; text-align: center; }
+        .summary-card h3 { margin: 0 0 5px 0; color: #606770; font-size: 14px; border-bottom: none; padding-bottom: 0;}
+        .summary-card p { margin: 0; font-size: 24px; font-weight: bold; color: #1c1e21; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; }
+        .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="container"><h1>Dashboard de Gestão de Frota</h1></div>
+
+    <div class="container">
+        <h2>Registrar Nova Viagem</h2>
+        <form id="form-viagem">
+            <div class="full-width"><label for="viagem-veiculo-select">Veículo:</label><select id="viagem-veiculo-select" required></select></div>
+            <div><label for="hodometro-inicial">Hodômetro Inicial (km):</label><input type="number" id="hodometro-inicial" required></div>
+            <div><label for="hodometro-final">Hodômetro Final (km):</label><input type="number" id="hodometro-final" required></div>
+            <div><label for="litros-abastecidos">Litros Abastecidos:</label><input type="number" id="litros-abastecidos" step="0.01"></div>
+            <div><label for="valor-abastecimento">Valor Abastecimento (R$):</label><input type="number" id="valor-abastecimento" step="0.01"></div>
+            <div class="full-width"><button type="submit">Registrar Viagem</button></div>
+        </form>
+        <hr>
+        <h3>Relatório de Viagens</h3>
+        <table id="tabela-viagens">
+            <thead><tr><th>Veículo/Data</th><th>Distância</th><th>Abastecimento</th><th>Preço/Litro</th><th>Ações</th></tr></thead>
+            <tbody id="corpo-tabela-viagens"></tbody>
+        </table>
+    </div>
+
+    <div class="container">
+        <h2>Custos Gerais da Frota</h2>
+         <div class="relatorio-header">
+            <h3>Relatório Unificado de Custos</h3>
+            <div class="filtros-container">
+                <div>
+                    <label for="filtro-tipo-custo">Filtrar por Tipo:</label>
+                    <select id="filtro-tipo-custo">
+                        <option value="">-- Todos os Tipos --</option>
+                        <option value="Abastecimento">Abastecimento</option>
+                        <option value="Custo de Viagem">Custo de Viagem</option>
+                        <option value="Custo Extra">Custo Extra</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtro-veiculo-custo">Filtrar por Veículo:</label>
+                    <select id="filtro-veiculo-custo"></select>
+                </div>
+            </div>
+        </div>
+        <div class="summary-container">
+            <div class="summary-card"><h3>Total de Lançamentos</h3><p id="total-lancamentos">0</p></div>
+            <div class="summary-card"><h3>Valor Total</h3><p id="valor-total">R$ 0,00</p></div>
+        </div>
+        <table id="tabela-custos-geral">
+            <thead><tr><th>Veículo</th><th>Tipo de Custo</th><th>Descrição</th><th>Valor</th><th>Data</th></tr></thead>
+            <tbody id="corpo-tabela-custos-geral"></tbody>
+        </table>
+        <hr>
+        <h3>Adicionar Custo Extra Avulso</h3>
+        <form id="form-custo-extra">
+             <div class="full-width"><label for="custo-veiculo-select">Veículo:</label><select id="custo-veiculo-select" required></select></div>
+            <div><label for="custo-descricao">Descrição do Custo Extra:</label><input type="text" id="custo-descricao" placeholder="Ex: Troca de óleo" required></div>
+            <div><label for="custo-valor">Valor (R$):</label><input type="number" id="custo-valor" step="0.01" placeholder="Ex: 150.50" required></div>
+            <div class="full-width"><button type="submit">Salvar Custo Extra</button></div>
+        </form>
+    </div>
+
+    <div id="modal-custos-viagem" class="modal">
+         <div class="modal-content">
+            <span id="modal-close-btn" class="close-btn">&times;</span>
+            <h2 id="modal-titulo">Custos da Viagem</h2><hr>
+            <h4>Custos Registrados</h4>
+            <ul id="lista-custos-viagem"></ul><hr>
+            <h4>Adicionar Novo Custo</h4>
+            <form id="form-custo-viagem" style="grid-template-columns: 1fr;">
+                <input type="hidden" id="modal-viagem-id">
+                <div><label for="modal-descricao">Descrição:</label><input type="text" id="modal-descricao" required></div>
+                <div><label for="modal-valor">Valor (R$):</label><input type="number" id="modal-valor" step="0.01" required></div>
+                <button type="submit">Adicionar Custo</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let mapaVeiculos = {}, listaDeViagens = [], listaDeCustosGeral = [];
+
+            // Referências aos elementos do DOM
+            const formViagem = document.getElementById('form-viagem');
+            const formCustoExtra = document.getElementById('form-custo-extra');
+            const formCustoViagem = document.getElementById('form-custo-viagem');
+            const corpoTabelaViagens = document.getElementById('corpo-tabela-viagens');
+            const corpoTabelaCustosGeral = document.getElementById('corpo-tabela-custos-geral');
+            const selectsDeVeiculo = {
+                viagem: document.getElementById('viagem-veiculo-select'),
+                custo: document.getElementById('custo-veiculo-select'),
+                filtro: document.getElementById('filtro-veiculo-custo')
+            };
+            const selectFiltroTipo = document.getElementById('filtro-tipo-custo');
+            const modal = document.getElementById('modal-custos-viagem');
+
+            // Funções Utilitárias
+            const formatarMoeda = (valor) => valor ? parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/A';
+            const alertUser = (msg) => alert(msg);
+
+            // Funções de Atualização de UI
+            const atualizarRelatorioCustosGeral = () => {
+                const filtroVeiculoId = selectsDeVeiculo.filtro.value;
+                const filtroTipo = selectFiltroTipo.value;
+
+                let custosFiltrados = listaDeCustosGeral;
+
+                if (filtroVeiculoId) {
+                    custosFiltrados = custosFiltrados.filter(c => c.deviceid == filtroVeiculoId);
+                }
+                if (filtroTipo) {
+                    custosFiltrados = custosFiltrados.filter(c => c.tipo === filtroTipo);
+                }
+
+                document.getElementById('total-lancamentos').textContent = custosFiltrados.length;
+                document.getElementById('valor-total').textContent = formatarMoeda(custosFiltrados.reduce((acc, c) => acc + parseFloat(c.valor || 0), 0));
+
+                corpoTabelaCustosGeral.innerHTML = '';
+                if (custosFiltrados.length === 0) { corpoTabelaCustosGeral.innerHTML = '<tr><td colspan="5">Nenhum custo encontrado para este filtro.</td></tr>'; return; }
+
+                custosFiltrados.forEach(c => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${mapaVeiculos[c.deviceid] || `ID: ${c.deviceid}`}</td><td><span style="background-color: #eee; padding: 2px 6px; border-radius: 4px;">${c.tipo}</span></td><td>${c.descricao}</td><td>${formatarMoeda(c.valor)}</td><td>${new Date(c.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>`;
+                    corpoTabelaCustosGeral.appendChild(tr);
+                });
+            };
+
+            const atualizarRelatorioViagens = () => {
+                corpoTabelaViagens.innerHTML = '';
+                if (listaDeViagens.length === 0) { corpoTabelaViagens.innerHTML = '<tr><td colspan="5">Nenhuma viagem registrada.</td></tr>'; return; }
+                listaDeViagens.sort((a, b) => b.id - a.id);
+                listaDeViagens.forEach(v => {
+                    let precoPorLitro = 'N/A';
+                    if (v.valor_abastecimento > 0 && v.litros_abastecidos > 0) {
+                        precoPorLitro = formatarMoeda(v.valor_abastecimento / v.litros_abastecidos);
+                    }
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><b>${mapaVeiculos[v.deviceid] || `ID: ${v.deviceid}`}</b><br><small>${new Date(v.data_viagem).toLocaleDateString('pt-BR',{timeZone:'UTC'})}</small></td><td>${v.distancia_percorrida} km</td><td>${formatarMoeda(v.valor_abastecimento)}</td><td>${precoPorLitro}</td><td><button class="action-btn" data-id="${v.id}">Gerenciar Custos</button></td>`;
+                    corpoTabelaViagens.appendChild(tr);
+                });
+            };
+
+            const carregarDadosIniciais = async () => {
+                try {
+                    const [veiculosRes, viagensRes, custosGeralRes] = await Promise.all([
+                        fetch('/api/veiculos'), fetch('/api/viagens'), fetch('/api/relatorio-custos-geral')
+                    ]);
+                    if (!veiculosRes.ok || !viagensRes.ok || !custosGeralRes.ok) throw new Error('Falha na comunicação com o servidor.');
+
+                    const veiculos = await veiculosRes.json();
+                    listaDeViagens = await viagensRes.json();
+                    listaDeCustosGeral = await custosGeralRes.json();
+
+                    mapaVeiculos = {};
+                    Object.values(selectsDeVeiculo).forEach(sel => sel.innerHTML = '');
+                    selectsDeVeiculo.filtro.innerHTML = '<option value="">-- Todos os Veículos --</option>';
+                    selectsDeVeiculo.viagem.innerHTML = '<option value="">-- Selecione --</option>';
+                    selectsDeVeiculo.custo.innerHTML = '<option value="">-- Selecione --</option>';
+
+                    veiculos.forEach(v => {
+                        const option = document.createElement('option');
+                        option.value = v.id;
+                        option.textContent = v.name;
+                        mapaVeiculos[v.id] = v.name;
+                        Object.values(selectsDeVeiculo).forEach(sel => sel.appendChild(option.cloneNode(true)));
+                    });
+
+                    atualizarRelatorioViagens();
+                    atualizarRelatorioCustosGeral();
+                } catch (error) { alertUser(`ERRO AO CARREGAR A PÁGINA: ${error.message}`); }
+            };
+
+            // Event Listeners
+            selectsDeVeiculo.filtro.addEventListener('change', atualizarRelatorioCustosGeral);
+            selectFiltroTipo.addEventListener('change', atualizarRelatorioCustosGeral);
+
+            modal.querySelector('.close-btn').onclick = () => { modal.style.display = "none"; };
+
+            corpoTabelaViagens.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('action-btn')) {
+                    const viagemId = e.target.dataset.id;
+                    document.getElementById('modal-viagem-id').value = viagemId;
+                    const viagem = listaDeViagens.find(v => v.id == viagemId);
+                    document.getElementById('modal-titulo').textContent = `Custos da Viagem: ${viagem.nome_veiculo}`;
+
+                    const response = await fetch(`/api/viagens/${viagemId}/custos`);
+                    const custos = await response.json();
+                    const listaEl = document.getElementById('lista-custos-viagem');
+                    listaEl.innerHTML = '';
+                    if (custos.length > 0) {
+                        custos.forEach(c => { const li = document.createElement('li'); li.textContent = `${c.descricao}: ${formatarMoeda(c.valor)}`; listaEl.appendChild(li); });
+                    } else {
+                        listaEl.innerHTML = '<li>Nenhum custo registrado para esta viagem.</li>';
+                    }
+                    modal.style.display = 'block';
+                }
+            });
+
+            formCustoViagem.addEventListener('submit', async (e) => {
+                 e.preventDefault();
+                 const custo = { descricao: e.target.querySelector('#modal-descricao').value, valor: e.target.querySelector('#modal-valor').value };
+                 const viagemId = e.target.querySelector('#modal-viagem-id').value;
+                 const response = await fetch(`/api/viagens/${viagemId}/custos`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(custo) });
+                 if(response.ok) {
+                     alertUser('Custo da viagem adicionado!');
+                     e.target.reset();
+                     await carregarDadosIniciais();
+                     modal.style.display = "none";
+                 } else { alertUser('Erro ao adicionar custo.'); }
+            });
+
+            formViagem.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const viagem = {
+                    deviceid: selectsDeVeiculo.viagem.value,
+                    nome_veiculo: mapaVeiculos[selectsDeVeiculo.viagem.value],
+                    hodometro_inicial: document.getElementById('hodometro-inicial').value,
+                    hodometro_final: document.getElementById('hodometro-final').value,
+                    litros_abastecidos: document.getElementById('litros-abastecidos').value,
+                    valor_abastecimento: document.getElementById('valor-abastecimento').value,
+                };
+                const response = await fetch('/api/viagens', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(viagem) });
+                if(response.ok) {
+                    alertUser('Viagem registrada!');
+                    formViagem.reset();
+                    await carregarDadosIniciais();
+                } else { alertUser('Erro ao registrar viagem.'); }
+            });
+
+            formCustoExtra.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const custo = {
+                    deviceid: selectsDeVeiculo.custo.value,
+                    descricao: document.getElementById('custo-descricao').value,
+                    valor: document.getElementById('custo-valor').value
+                };
+                const response = await fetch('/api/custos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(custo) });
+                if(response.ok) {
+                    alertUser('Custo extra salvo com sucesso!');
+                    formCustoExtra.reset();
+                    await carregarDadosIniciais();
+                } else { alertUser('Erro ao salvar custo extra.'); }
+            });
+
+            carregarDadosIniciais();
+        });
+    </script>
+</body>
+</html>
