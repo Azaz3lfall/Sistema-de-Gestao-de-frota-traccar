@@ -1,5 +1,3 @@
-/* Conteúdo para o arquivo: script.js */
-
 // Espera o HTML carregar completamente antes de executar
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('--- INICIANDO SCRIPT.JS ---');
