@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // --- ROTAS DA API ---
-
+/*
 // Rota para buscar veículos do Traccar
 app.get('/api/veiculos', async (req, res) => {
     try {
@@ -31,6 +31,44 @@ app.get('/api/veiculos', async (req, res) => {
     } catch (error) {
         console.error("Erro ao buscar veículos do Traccar:", error.message);
         res.status(500).json({ error: 'Erro ao conectar com o Traccar' });
+    }
+});*/
+// Rota para buscar veículos do Traccar
+app.get('/api/meus-veiculos', async (req, res) => {
+    try {
+        // Pega o ID do usuário logado no seu sistema de gestão (a partir da sessão/token)
+        const gestaoUserId = req.user.id; 
+
+        // Busca no banco de dados as credenciais Traccar associadas a esse usuário
+        const traccarCredentials = await db.getTraccarCredentialsForUser(gestaoUserId);
+        
+        if (!traccarCredentials) {
+            return res.status(403).json({ error: 'Usuário não associado a uma conta Traccar.' });
+        }
+
+        //Monta as credenciais para a chamada à API do Traccar
+        const credentialsB64 = btoa(`${traccarCredentials.user}:${traccarCredentials.pass}`);
+        const traccarApiUrl = 'https://tracker.rastreadorautoram.com.br/api/devices';
+
+        //chama a API do Traccar com as credenciais específicas do cliente
+        const response = await fetch(traccarApiUrl, {
+            headers: {
+                'Authorization': `Basic ${credentialsB64}`,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Falha ao autenticar ou buscar dados no Traccar.');
+        }
+
+        const veiculosDoCliente = await response.json();
+
+        //Retorna a lista de veículos, que já vem filtrada pelo Traccar
+        res.json(veiculosDoCliente);
+
+    } catch (error) {
+        console.error("Erro no proxy para o Traccar:", error);
+        res.status(500).json({ error: 'Erro interno ao buscar veículos.' });
     }
 });
 
@@ -113,7 +151,7 @@ app.post('/api/viagens', async (req, res) => {
     }
 });
 
-// --- ROTAS PARA CUSTOS DA VIAGEM (A PARTE MAIS IMPORTANTE PARA SEU PEDIDO) ---
+// --- ROTAS PARA CUSTOS DA VIAGEM ---
 app.get('/api/viagens/:viagemId/custos', async (req, res) => {
     const { viagemId } = req.params;
     try {

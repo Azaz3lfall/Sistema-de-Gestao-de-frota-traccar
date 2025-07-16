@@ -1,3 +1,4 @@
+<!--
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -29,7 +30,7 @@
     </style>
 </head>
 <body>
-    <div class="container"><h1>Dashboard de Gestão de Frota</h1></div>
+    <div class="container"><h1>Gestão de Frota</h1></div>
 
     <div class="container">
         <h2>Registrar Nova Viagem</h2>
@@ -272,5 +273,152 @@
             carregarDadosIniciais();
         });
     </script>
+</body>
+</html>
+-->
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Frota</title>
+    <meta name="Azaz3lFallen">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Dashboard de Gestão de Frota</h1>
+    </div>
+
+    <div class="container">
+        <h2>Registrar Nova Viagem</h2>
+        <form id="form-viagem">
+            <div class="full-width">
+                <label for="viagem-veiculo-select">Veículo:</label>
+                <select id="viagem-veiculo-select" required></select>
+            </div>
+            <div>
+                <label for="hodometro-inicial">Hodômetro Inicial (km):</label>
+                <input type="number" id="hodometro-inicial" required>
+            </div>
+            <div>
+                <label for="hodometro-final">Hodômetro Final (km):</label>
+                <input type="number" id="hodometro-final" required>
+            </div>
+            <div>
+                <label for="litros-abastecidos">Litros Abastecidos:</label>
+                <input type="number" id="litros-abastecidos" step="0.01">
+            </div>
+            <div>
+                <label for="valor-abastecimento">Valor Abastecimento (R$):</label>
+                <input type="number" id="valor-abastecimento" step="0.01">
+            </div>
+            <div class="full-width">
+                <button type="submit">Registrar Viagem</button>
+            </div>
+        </form>
+        <hr>
+        <h3>Relatório de Viagens</h3>
+        <table id="tabela-viagens">
+            <thead>
+                <tr>
+                    <th>Veículo/Data</th>
+                    <th>Distância</th>
+                    <th>Abastecimento</th>
+                    <th>Preço/Litro</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela-viagens"></tbody>
+        </table>
+    </div>
+
+    <div class="container">
+        <h2>Custos Gerais da Frota</h2>
+        <div class="relatorio-header">
+            <h3>Relatório Unificado de Custos</h3>
+            <div class="filtros-container">
+                <div>
+                    <label for="filtro-tipo-custo">Filtrar por Tipo:</label>
+                    <select id="filtro-tipo-custo">
+                        <option value="">-- Todos os Tipos --</option>
+                        <option value="Abastecimento">Abastecimento</option>
+                        <option value="Custo de Viagem">Custo de Viagem</option>
+                        <option value="Custo Extra">Custo Extra</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtro-veiculo-custo">Filtrar por Veículo:</label>
+                    <select id="filtro-veiculo-custo"></select>
+                </div>
+            </div>
+        </div>
+        <div class="summary-container">
+            <div class="summary-card">
+                <h3>Total de Lançamentos</h3>
+                <p id="total-lancamentos">0</p>
+            </div>
+            <div class="summary-card">
+                <h3>Valor Total</h3>
+                <p id="valor-total">R$ 0,00</p>
+            </div>
+        </div>
+        <table id="tabela-custos-geral">
+            <thead>
+                <tr>
+                    <th>Veículo</th>
+                    <th>Tipo de Custo</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela-custos-geral"></tbody>
+        </table>
+        <hr>
+        <h3>Adicionar Custo Extra Avulso</h3>
+        <form id="form-custo-extra">
+            <div class="full-width">
+                <label for="custo-veiculo-select">Veículo:</label>
+                <select id="custo-veiculo-select" required></select>
+            </div>
+            <div>
+                <label for="custo-descricao">Descrição do Custo Extra:</label>
+                <input type="text" id="custo-descricao" placeholder="Ex: Troca de óleo" required>
+            </div>
+            <div>
+                <label for="custo-valor">Valor (R$):</label>
+                <input type="number" id="custo-valor" step="0.01" placeholder="Ex: 150.50" required>
+            </div>
+            <div class="full-width">
+                <button type="submit">Salvar Custo Extra</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="modal-custos-viagem" class="modal">
+        <div class="modal-content">
+            <span id="modal-close-btn" class="close-btn">&times;</span>
+            <h2 id="modal-titulo">Custos da Viagem</h2>
+            <hr>
+            <h4>Custos Registrados</h4>
+            <ul id="lista-custos-viagem"></ul>
+            <hr>
+            <h4>Adicionar Novo Custo</h4>
+            <form id="form-custo-viagem" style="grid-template-columns: 1fr;">
+                <input type="hidden" id="modal-viagem-id">
+                <div>
+                    <label for="modal-descricao">Descrição:</label>
+                    <input type="text" id="modal-descricao" required>
+                </div>
+                <div>
+                    <label for="modal-valor">Valor (R$):</label>
+                    <input type="number" id="modal-valor" step="0.01" required>
+                </div>
+                <button type="submit">Adicionar Custo</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
